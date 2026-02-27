@@ -71,8 +71,14 @@ class OfflineSocket {
 
             case 'startGame':
                 if (this.room && this.room.state === 'lobby') {
-                    this.room.state = 'playing';
-                    this.gameStartTime = Date.now();
+                    this.room.state = 'starting';
+                    this.startDelayTimer = Date.now();
+
+                    // Force everyone to center for the countdown
+                    Object.values(this.room.players).forEach(p => {
+                        p.x = this.room.map.width / 2;
+                        p.y = this.room.map.height / 2;
+                    });
 
                     if (data.fillBots) {
                         const targetTotal = this.room.maxSurvivors + this.room.maxHunters;
@@ -85,7 +91,7 @@ class OfflineSocket {
                         }
                     }
 
-                    this.serverEmit('init', { players: this.room.players, map: this.room.map, timer: OFFLINE_GAME_DURATION });
+                    this.serverEmit('init', { players: this.room.players, map: this.room.map, timer: OFFLINE_GAME_DURATION, state: 'starting' });
 
                     // Start Offline Loops
                     let lastTime = Date.now();
@@ -96,17 +102,30 @@ class OfflineSocket {
                     }, 33);
 
                     this.gameLoopInterval = setInterval(() => {
-                        const timeLeft = Math.max(0, OFFLINE_GAME_DURATION - Math.floor((Date.now() - this.gameStartTime) / 1000));
-                        if (timeLeft === 0) this.endGame('Time Expired - Survivor Victory');
+                        if (this.room.state === 'starting') {
+                            const elapsed = (Date.now() - this.startDelayTimer) / 1000;
+                            if (elapsed >= 10) {
+                                this.room.state = 'playing';
+                                this.gameStartTime = Date.now();
+                                this.serverEmit('gameStateUpdate', { state: 'playing' });
+                            }
+                        } else if (this.room.state === 'playing') {
+                            const timeLeft = Math.max(0, OFFLINE_GAME_DURATION - Math.floor((Date.now() - this.gameStartTime) / 1000));
+                            if (timeLeft === 0) this.endGame('Time Expired - Survivor Victory');
+                        }
                     }, 1000);
                 }
                 break;
 
             case 'move':
                 if (this.room && this.room.players[this.id] && !this.room.players[this.id].isDead) {
-                    this.room.players[this.id].x = data.x;
-                    this.room.players[this.id].y = data.y;
-                    this.room.players[this.id].rotation = data.rotation;
+                    const p = this.room.players[this.id];
+                    if (this.room.state === 'starting' && p.role === 'hunter') return;
+                    if (this.room.state === 'starting' || this.room.state === 'playing') {
+                        p.x = data.x;
+                        p.y = data.y;
+                        p.rotation = data.rotation;
+                    }
                 }
                 break;
 
@@ -337,7 +356,7 @@ class OfflineSocket {
 
     createBot(id, role, room) {
         return {
-            id, x: room.map.width / 2 + (Math.random() * 400 - 200), y: room.map.height / 2 + (Math.random() * 400 - 200),
+            id, x: room.map.width / 2, y: room.map.height / 2,
             rotation: 0, role, camouflage: OFFLINE_SHAPES[Math.floor(Math.random() * OFFLINE_SHAPES.length)],
             isLightOn: Math.random() > 0.3, isDead: false, isSlowed: false, isBot: true, moveTick: 0,
             stats: { kills: 0, reveals: 0, surviveTime: 0, placement: 0 }

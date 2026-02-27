@@ -1,4 +1,5 @@
 const GAME_DURATION = 180;
+const START_DELAY = 10;
 const MAP_TYPES = ['Maze', 'Forest', 'School'];
 const SHAPES = ['triangle', 'box', 'circle'];
 
@@ -221,11 +222,10 @@ function findValidSpawn(map) {
 }
 
 function createBot(id, role, room) {
-    const spawnPos = findValidSpawn(room.map);
     return {
         id,
-        x: spawnPos.x,
-        y: spawnPos.y,
+        x: room.map.width / 2,
+        y: room.map.height / 2,
         rotation: 0,
         role,
         camouflage: SHAPES[Math.floor(Math.random() * SHAPES.length)],
@@ -314,11 +314,10 @@ function init(socketIo) {
             if (data.requestedRole && Object.keys(room.players).length === 0) role = data.requestedRole;
 
             const isLateJoin = room.state === 'playing';
-            const spawnPos = findValidSpawn(room.map);
             room.players[socket.id] = {
                 id: socket.id,
                 name: `Player ${Object.keys(room.players).length + 1}`,
-                x: spawnPos.x, y: spawnPos.y, rotation: 0,
+                x: room.map.width / 2, y: room.map.height / 2, rotation: 0,
                 role: role, camouflage: SHAPES[Math.floor(Math.random() * SHAPES.length)],
                 isLightOn: false, isCharging: false, isDead: isLateJoin, isSlowed: false, isBot: false,
                 stats: { kills: 0, reveals: 0, surviveTime: 0, placement: 0 }
@@ -333,8 +332,15 @@ function init(socketIo) {
         socket.on('startGame', (config) => {
             const room = rooms[socket.roomId];
             if (room && room.hostId === socket.id && room.state === 'lobby') {
-                room.state = 'playing';
-                room.gameStartTime = Date.now();
+                room.state = 'starting';
+                room.startTimer = Date.now();
+
+                // Move everyone to center for the countdown start
+                Object.values(room.players).forEach(p => {
+                    p.x = room.map.width / 2;
+                    p.y = room.map.height / 2;
+                });
+
                 if (config.fillBots) {
                     const targetTotal = room.maxSurvivors + room.maxHunters;
                     const botCount = targetTotal - Object.keys(room.players).length;
@@ -345,27 +351,32 @@ function init(socketIo) {
                         room.players[botId] = bot;
                     }
                 }
-                io.to(socket.roomId).emit('init', { players: room.players, map: room.map, timer: GAME_DURATION });
+                io.to(socket.roomId).emit('init', { players: room.players, map: room.map, timer: GAME_DURATION, state: 'starting' });
             }
         });
 
         socket.on('move', (moveData) => {
             const room = rooms[socket.roomId];
-            if (room && room.players[socket.id] && !room.players[socket.id].isDead && room.state === 'playing') {
-                room.players[socket.id].x = moveData.x;
-                room.players[socket.id].y = moveData.y;
-                room.players[socket.id].rotation = moveData.rotation;
-                socket.to(socket.roomId).emit('playerMoved', room.players[socket.id]);
+            if (!room || room.players[socket.id]?.isDead) return;
+
+            const p = room.players[socket.id];
+            // Hunter is locked in center during countdown
+            if (room.state === 'starting' && p.role === 'hunter') return;
+            // Otherwise allow move if in starting or playing state
+            if (room.state === 'starting' || room.state === 'playing') {
+                p.x = moveData.x;
+                p.y = moveData.y;
+                p.rotation = moveData.rotation;
+                socket.to(socket.roomId).emit('playerMoved', p);
             }
         });
 
         socket.on('player_killed', (data) => {
             const { targetId, radius } = data;
             const room = rooms[socket.roomId];
-            if (!room || room.state !== 'playing') return;
-            const hunter = room.players[socket.id];
-            const target = room.players[targetId];
-            if (hunter && hunter.role === 'hunter' && target && !target.isDead) {
+            const hunter = room?.players[socket.id];
+            const target = room?.players[targetId];
+            if (room && room.state === 'playing' && hunter && hunter.role === 'hunter' && target && !target.isDead) {
                 const dist = Math.sqrt((hunter.x - target.x) ** 2 + (hunter.y - target.y) ** 2);
                 if (dist <= (radius || 150) + 30) {
                     target.isDead = true; hunter.stats.kills++;
@@ -435,7 +446,14 @@ function init(socketIo) {
     setInterval(() => {
         Object.keys(rooms).forEach(roomId => {
             const room = rooms[roomId];
-            if (room.state === 'playing' && room.gameStartTime) {
+            if (room.state === 'starting') {
+                const elapsed = (Date.now() - room.startTimer) / 1000;
+                if (elapsed >= START_DELAY) {
+                    room.state = 'playing';
+                    room.gameStartTime = Date.now();
+                    io.to(roomId).emit('gameStateUpdate', { state: 'playing' });
+                }
+            } else if (room.state === 'playing' && room.gameStartTime) {
                 const timeLeft = Math.max(0, GAME_DURATION - Math.floor((Date.now() - room.gameStartTime) / 1000));
                 if (timeLeft === 0) endGame(room, 'Time Expired - Survivor Victory');
             }

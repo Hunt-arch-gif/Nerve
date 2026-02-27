@@ -14,6 +14,8 @@ let gameDataBuffer = null;
 let gameTimerValue = 180;
 let sprintTimeLeft = 3000;
 let staminaBar;
+let gameState = 'lobby';
+let countdownTimerValue = 10;
 
 // Mobile/Touch Globals
 let isMobile = false;
@@ -117,7 +119,16 @@ function startGameWithSocket(socket, roomId, roomType = 'match', requestedRole) 
     socket.on('init', (data) => {
         gameDataBuffer = data;
         gameTimerValue = data.timer || 180;
+        gameState = data.state || 'playing';
         if (currentScene) setupGame(currentScene, data);
+    });
+
+    socket.on('gameStateUpdate', (data) => {
+        gameState = data.state;
+        if (gameState === 'playing') {
+            const overlay = document.getElementById('countdown-overlay');
+            if (overlay) overlay.style.display = 'none';
+        }
     });
 
     socket.on('hunter_charging', (data) => {
@@ -233,6 +244,21 @@ function startGameWithSocket(socket, roomId, roomType = 'match', requestedRole) 
         }
         setTimeout(() => location.reload(), 3000);
     });
+
+    // Handle Countdown Timer for Starting State
+    setInterval(() => {
+        if (gameState === 'starting' && countdownTimerValue > 0) {
+            countdownTimerValue--;
+            const countEl = document.getElementById('countdown-number');
+            const overlay = document.getElementById('countdown-overlay');
+            if (countEl) countEl.innerText = countdownTimerValue;
+            if (overlay) overlay.style.display = 'flex';
+            if (countdownTimerValue <= 0) {
+                if (overlay) overlay.style.display = 'none';
+                gameState = 'playing'; // Fallback if server event missed, though server should sync
+            }
+        }
+    }, 1000);
 }
 
 function setupGame(scene, data) {
@@ -409,7 +435,6 @@ function update(time, delta) {
     }
 
     // Game Stats UI (Timer & Survivor Count)
-    const isHunter = player.role === 'hunter';
     const survivorsAlive = [player, ...Object.values(otherPlayers)].filter(p => p && p.role === 'survivor' && !p.isDead).length;
     const survivorCounter = document.getElementById('survivor-count-container');
     const survivorVal = document.getElementById('survivor-count-val');
@@ -452,8 +477,9 @@ function update(time, delta) {
     }
 
     // Speed calculation
+    const isLocked = gameState === 'starting' && isHunter;
     const baseSurvivorSpeed = 320;
-    const baseSpeed = player.isSlowed ? 150 : (player.role === 'hunter' ? baseSurvivorSpeed * 1.5 : baseSurvivorSpeed);
+    const baseSpeed = isLocked ? 0 : (player.isSlowed ? 150 : (player.role === 'hunter' ? baseSurvivorSpeed * 1.5 : baseSurvivorSpeed));
     let speed = isSprinting ? baseSpeed * 1.5 : baseSpeed;
 
     let vx = 0, vy = 0;
@@ -689,13 +715,18 @@ function renderLighting(scene) {
     // Hunter's personal radius (slightly revealed area)
     const activeHunters = [player, ...Object.values(otherPlayers)].filter(p => p && p.role === 'hunter' && !p.isDead);
     activeHunters.forEach(hunter => {
-        shroudGraphics.fillCircle(hunter.x, hunter.y, 40);
+        // Hunter view is extremely limited (150px radius) during the 10s starting countdown as requested
+        const personalRadius = (gameState === 'starting') ? 150 : 40;
+        shroudGraphics.fillCircle(hunter.x, hunter.y, personalRadius);
     });
 
     // Flashlight cones and 360 fields - raycasted polygons
     activeLights.forEach(s => {
         const isHunterLight = s.role === 'hunter';
-        const radius = isHunterLight ? 360 : 2500; // Flashlight until blocked
+        // Hunter light is also limited/forced off during countdown
+        let radius = isHunterLight ? 360 : 2500;
+        if (gameState === 'starting' && isHunterLight) radius = 150;
+
         const spread = isHunterLight ? Math.PI : 0.5;
 
         // Survivor flashlight is blocked by props
@@ -800,7 +831,8 @@ function renderLighting(scene) {
     // Draw visible light cones for all players so others see their flashlights
     activeLights.forEach(s => {
         const isHunterLight = s.role === 'hunter';
-        const radius = isHunterLight ? 360 : 2500;
+        let radius = isHunterLight ? 360 : 2500;
+        if (gameState === 'starting' && isHunterLight) radius = 150;
         const spread = isHunterLight ? Math.PI : 0.5;
         const color = isHunterLight ? 0xff2a2a : 0xffffaa;
         const alpha = isHunterLight ? 0.1 : 0.15;
@@ -867,7 +899,8 @@ function checkLineOfSight(x1, y1, x2, y2, blockByProps = false) {
 function checkIlluminated(target, sources, blockByProps = false) {
     for (let s of sources) {
         const isHunterLight = s.role === 'hunter';
-        const radius = isHunterLight ? 360 : 2500;
+        let radius = isHunterLight ? 360 : 2500;
+        if (gameState === 'starting' && isHunterLight) radius = 150;
         const spread = isHunterLight ? Math.PI : 0.5;
 
         const dist = Phaser.Math.Distance.Between(s.x, s.y, target.x, target.y);
