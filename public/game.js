@@ -434,6 +434,7 @@ function update(time, delta) {
         return;
     }
 
+    const isHunter = player.role === 'hunter';
     // Game Stats UI (Timer & Survivor Count)
     const survivorsAlive = [player, ...Object.values(otherPlayers)].filter(p => p && p.role === 'survivor' && !p.isDead).length;
     const survivorCounter = document.getElementById('survivor-count-container');
