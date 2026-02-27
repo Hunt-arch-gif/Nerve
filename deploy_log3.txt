@@ -1,0 +1,122 @@
+﻿[2026-02-27T04:08:41.912Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[2026-02-27T04:08:41.913Z] > authorizing via signed-in user (huntpeople4@gmail.com)
+[2026-02-27T04:08:41.913Z] [iam] checking project nerve-5ab2b for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[2026-02-27T04:08:41.915Z] Checked if tokens are valid: true, expires at: 1772168347397
+[2026-02-27T04:08:41.915Z] Checked if tokens are valid: true, expires at: 1772168347397
+[2026-02-27T04:08:41.917Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/nerve-5ab2b:testIamPermissions [none]
+[2026-02-27T04:08:41.917Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/nerve-5ab2b:testIamPermissions  x-goog-user-project=nerve-5ab2b
+[2026-02-27T04:08:41.917Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/nerve-5ab2b:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[2026-02-27T04:08:42.118Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/nerve-5ab2b:testIamPermissions 200
+[2026-02-27T04:08:42.118Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/nerve-5ab2b:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[2026-02-27T04:08:42.119Z] Checked if tokens are valid: true, expires at: 1772168347397
+[2026-02-27T04:08:42.119Z] Checked if tokens are valid: true, expires at: 1772168347397
+[2026-02-27T04:08:42.119Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/nerve-5ab2b [none]
+[2026-02-27T04:08:42.400Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/nerve-5ab2b 200
+[2026-02-27T04:08:42.401Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/nerve-5ab2b {"projectId":"nerve-5ab2b","projectNumber":"456012223952","displayName":"Nerve","name":"projects/nerve-5ab2b","resources":{"hostingSite":"nerve-5ab2b"},"state":"ACTIVE","etag":"1_f6e255e0-3ffc-4bfa-aa57-d428cdd93817"}
+
+=== Deploying to 'nerve-5ab2b'...
+
+i  deploying hosting 
+[2026-02-27T04:08:42.409Z] Checked if tokens are valid: true, expires at: 1772168347397
+[2026-02-27T04:08:42.409Z] Checked if tokens are valid: true, expires at: 1772168347397
+[2026-02-27T04:08:42.409Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/nerve-5ab2b/versions [none]
+[2026-02-27T04:08:42.409Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/nerve-5ab2b/versions {"status":"CREATED","labels":{"deployment-tool":"cli-firebase"}}
+[2026-02-27T04:08:43.407Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/nerve-5ab2b/versions 200
+[2026-02-27T04:08:43.408Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/nerve-5ab2b/versions {"name":"projects/456012223952/sites/nerve-5ab2b/versions/0a09704184fac74f","status":"CREATED","config":{},"labels":{"deployment-tool":"cli-firebase"}}
+i  hosting[nerve-5ab2b]: beginning deploy... 
+i  hosting[nerve-5ab2b]: found 9 files in public 
+[2026-02-27T04:08:43.427Z] [hosting] uploading with 200 concurrency
+[2026-02-27T04:08:43.432Z] Checked if tokens are valid: true, expires at: 1772168347397
+[2026-02-27T04:08:43.432Z] Checked if tokens are valid: true, expires at: 1772168347397
+[2026-02-27T04:08:43.434Z] [hosting] hash cache [cHVibGlj] stored for 9 files
+[2026-02-27T04:08:43.435Z] [hosting][hash queue][FINAL] {"max":3,"min":1,"avg":1,"active":0,"complete":9,"success":9,"errored":0,"retried":0,"total":9,"elapsed":6}
+[2026-02-27T04:08:43.435Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/456012223952/sites/nerve-5ab2b/versions/0a09704184fac74f:populateFiles [none]
+[2026-02-27T04:08:43.435Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/456012223952/sites/nerve-5ab2b/versions/0a09704184fac74f:populateFiles {"files":{"/index.html":"23c16e06dc14c12553185f1eeb3aa6ada6903106be2d36a350a53b1efbbde046","/game.js":"c19acf2996f199740d679ce636a615e1a258f9e600768691114c7a37cdabf939","/firebase-setup.js":"7ec989625d13c03c934fb009fea86cbc4422bc4bee94d771960ca1e48a1e3929","/assets/wall_texture.png":"649f91d01bb351ea3ea869ba315361ba402730ca52668b44b6af021a5ef891e0","/assets/wall.png":"816f8cc92b318c9deb77dd471452fd9706c54c29bcec47f395cb370b93bca19d","/assets/survivor.png":"3d6eabc9c19d719e3edd79ce18402dadb5b3e01e68cad224ba19c8fbb19ce7c7","/assets/school_floor.png":"c5d4d62a35f515690fef1291c26615bf549ad191de1dd766821e081e810b976f","/assets/hunter.png":"1e30344ea0e5ec7fb00f7d4d4ffa23582f77c7a2e749abfa42d5e23f7544ac17","/assets/forest_floor.png":"fe097077dd6b6e6086da8c965dfdb2e5d55e9245ce4ba0cb4092c769934f609b"}}
+[2026-02-27T04:08:44.423Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/456012223952/sites/nerve-5ab2b/versions/0a09704184fac74f:populateFiles 200
+[2026-02-27T04:08:44.423Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/456012223952/sites/nerve-5ab2b/versions/0a09704184fac74f:populateFiles {"uploadUrl":"https://upload-firebasehosting.googleapis.com/upload/sites/nerve-5ab2b/versions/0a09704184fac74f/files"}
+[2026-02-27T04:08:44.423Z] [hosting][populate queue][FINAL] {"max":991,"min":991,"avg":991,"active":0,"complete":1,"success":1,"errored":0,"retried":0,"total":1,"elapsed":991}
+[2026-02-27T04:08:44.424Z] [hosting] uploads queued: 0
+[2026-02-27T04:08:44.424Z] [hosting][upload queue][FINAL] {"max":0,"min":9999999999,"avg":0,"active":0,"complete":0,"success":0,"errored":0,"retried":0,"total":0,"elapsed":1772165324424}
+i  hosting: upload complete 
++  hosting[nerve-5ab2b]: file upload complete 
+[2026-02-27T04:08:44.425Z] [hosting] deploy completed after 1013ms
+[2026-02-27T04:08:44.425Z] [
+  {
+    "config": {
+      "public": "public",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "/socket.io/**",
+          "run": {
+            "serviceId": "nerve-ws-server",
+            "region": "us-central1"
+          }
+        }
+      ],
+      "site": "nerve-5ab2b"
+    },
+    "version": "projects/456012223952/sites/nerve-5ab2b/versions/0a09704184fac74f"
+  }
+]
+i  hosting[nerve-5ab2b]: finalizing version... 
+[2026-02-27T04:08:44.426Z] Checked if tokens are valid: true, expires at: 1772168347397
+[2026-02-27T04:08:44.427Z] Checked if tokens are valid: true, expires at: 1772168347397
+[2026-02-27T04:08:44.427Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/projects/nerve-5ab2b/locations/-/functions [none]
+[2026-02-27T04:08:49.826Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/projects/nerve-5ab2b/locations/-/functions 403
+[2026-02-27T04:08:49.826Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/projects/nerve-5ab2b/locations/-/functions {"error":{"code":403,"message":"Cloud Functions API has not been used in project nerve-5ab2b before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=nerve-5ab2b then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com","metadata":{"consumer":"projects/nerve-5ab2b","containerInfo":"nerve-5ab2b","activationUrl":"https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=nerve-5ab2b","service":"cloudfunctions.googleapis.com","serviceTitle":"Cloud Functions API"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"Cloud Functions API has not been used in project nerve-5ab2b before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=nerve-5ab2b then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."},{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Google developers console API activation","url":"https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=nerve-5ab2b"}]}]}}
+[2026-02-27T04:08:49.828Z] [functions] failed to list functions for nerve-5ab2b
+[2026-02-27T04:08:49.828Z] [functions] Request to https://cloudfunctions.googleapis.com/v1/projects/nerve-5ab2b/locations/-/functions had HTTP Error: 403, Cloud Functions API has not been used in project nerve-5ab2b before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=nerve-5ab2b then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+[2026-02-27T04:08:49.828Z] Deploying hosting site nerve-5ab2b, did not have permissions to check for backends:  Failed to list functions for nerve-5ab2b {"name":"FirebaseError","children":[],"exit":1,"message":"Failed to list functions for nerve-5ab2b","original":{"name":"FirebaseError","children":[],"context":{"body":{"error":{"code":403,"message":"Cloud Functions API has not been used in project nerve-5ab2b before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=nerve-5ab2b then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com","metadata":{"consumer":"projects/nerve-5ab2b","containerInfo":"nerve-5ab2b","activationUrl":"https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=nerve-5ab2b","service":"cloudfunctions.googleapis.com","serviceTitle":"Cloud Functions API"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"Cloud Functions API has not been used in project nerve-5ab2b before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=nerve-5ab2b then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."},{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Google developers console API activation","url":"https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=nerve-5ab2b"}]}]}},"response":{"statusCode":403}},"exit":1,"message":"Request to https://cloudfunctions.googleapis.com/v1/projects/nerve-5ab2b/locations/-/functions had HTTP Error: 403, Cloud Functions API has not been used in project nerve-5ab2b before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=nerve-5ab2b then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","status":403},"status":403}
+[2026-02-27T04:08:49.830Z] Checked if tokens are valid: true, expires at: 1772168347397
+[2026-02-27T04:08:49.830Z] Checked if tokens are valid: true, expires at: 1772168347397
+[2026-02-27T04:08:49.831Z] >>> [apiv2][query] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/nerve-5ab2b/versions/0a09704184fac74f updateMask=status%2Cconfig
+[2026-02-27T04:08:49.831Z] >>> [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/nerve-5ab2b/versions/0a09704184fac74f {"status":"FINALIZED","config":{"rewrites":[{"glob":"/socket.io/**","run":{"serviceId":"nerve-ws-server","region":"us-central1"}}]}}
+[2026-02-27T04:08:50.584Z] <<< [apiv2][status] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/nerve-5ab2b/versions/0a09704184fac74f 403
+[2026-02-27T04:08:50.585Z] <<< [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/nerve-5ab2b/versions/0a09704184fac74f {"error":{"code":403,"message":"Cloud Run Admin API has not been used in project 456012223952 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/run.googleapis.com/overview?project=456012223952 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com","metadata":{"consumer":"projects/456012223952","containerInfo":"456012223952","activationUrl":"https://console.developers.google.com/apis/api/run.googleapis.com/overview?project=456012223952","serviceTitle":"Cloud Run Admin API","service":"run.googleapis.com"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"Cloud Run Admin API has not been used in project 456012223952 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/run.googleapis.com/overview?project=456012223952 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."},{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Google developers console API activation","url":"https://console.developers.google.com/apis/api/run.googleapis.com/overview?project=456012223952"}]}]}}
+
+Error: Request to https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/nerve-5ab2b/versions/0a09704184fac74f?updateMask=status%2Cconfig had HTTP Error: 403, Cloud Run Admin API has not been used in project 456012223952 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/run.googleapis.com/overview?project=456012223952 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+[2026-02-27T04:08:50.789Z] Error Context: {
+  "body": {
+    "error": {
+      "code": 403,
+      "message": "Cloud Run Admin API has not been used in project 456012223952 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/run.googleapis.com/overview?project=456012223952 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.",
+      "status": "PERMISSION_DENIED",
+      "details": [
+        {
+          "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+          "reason": "SERVICE_DISABLED",
+          "domain": "googleapis.com",
+          "metadata": {
+            "consumer": "projects/456012223952",
+            "containerInfo": "456012223952",
+            "activationUrl": "https://console.developers.google.com/apis/api/run.googleapis.com/overview?project=456012223952",
+            "serviceTitle": "Cloud Run Admin API",
+            "service": "run.googleapis.com"
+          }
+        },
+        {
+          "@type": "type.googleapis.com/google.rpc.LocalizedMessage",
+          "locale": "en-US",
+          "message": "Cloud Run Admin API has not been used in project 456012223952 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/run.googleapis.com/overview?project=456012223952 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."
+        },
+        {
+          "@type": "type.googleapis.com/google.rpc.Help",
+          "links": [
+            {
+              "description": "Google developers console API activation",
+              "url": "https://console.developers.google.com/apis/api/run.googleapis.com/overview?project=456012223952"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "response": {
+    "statusCode": 403
+  }
+}

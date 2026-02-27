@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>NERVE.IO | Descent into Darkness</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap');
+
+        :root {
+            --primary: #ff2a2a;
+            --primary-glow: rgba(255, 42, 42, 0.4);
+            --bg: #020202;
+            --panel: rgba(15, 15, 20, 0.8);
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            touch-action: none;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg);
+            /* ... previous background styles ... */
+            background-image:
+                radial-gradient(circle at 50% 50%, rgba(255, 42, 42, 0.05) 0%, transparent 70%),
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 50px 50px, 50px 50px;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: gridMove 20s linear infinite;
+        }
+
+        /* Mobile Controls */
+        #mobile-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            z-index: 1000;
+            display: none;
+            /* Only show on touch device or small screen */
+            pointer-events: none;
+        }
+
+        .joystick-base {
+            position: absolute;
+            bottom: 40px;
+            left: 50px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            pointer-events: auto;
+        }
+
+        .joystick-thumb {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: var(--primary);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .action-button {
+            position: absolute;
+            bottom: 40px;
+            right: 50px;
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 18px;
+            color: #fff;
+            pointer-events: auto;
+            backdrop-filter: blur(5px);
+        }
+
+        .action-button:active {
+            background: var(--primary);
+            transform: scale(0.9);
+        }
+
+        #flashlight-btn {
+            bottom: 130px;
+            right: 40px;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+        }
+
+        #action-main-btn {
+            bottom: 40px;
+            right: 50px;
+            width: 90px;
+            height: 90px;
+            background: rgba(255, 42, 42, 0.2);
+            border-color: var(--primary);
+        }
+
+        @media (max-width: 900px) {
+            #lobby-ui {
+                width: 90%;
+                padding: 30px;
+            }
+
+            #mobile-controls {
+                display: block;
+            }
+        }
+
+        @keyframes gridMove {
+            from {
+                background-position: 0 0, 0 0, 0 0;
+            }
+
+            to {
+                background-position: 0 0, 50px 50px, 50px 50px;
+            }
+        }
+
+        #lobby-ui {
+            position: relative;
+            z-index: 100;
+            width: 450px;
+            padding: 60px;
+            background: var(--panel);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: 8px;
+            margin: 0 0 10px 0;
+            background: linear-gradient(180deg, #fff 0%, #666 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--primary-glow);
+        }
+
+        .subtitle {
+            font-size: 14px;
+            letter-spacing: 3px;
+            color: var(--primary);
+            text-transform: uppercase;
+            margin-bottom: 40px;
+            font-weight: 700;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .btn {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 10px 20px var(--primary-glow);
+            background: #ff4a4a;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .divider {
+            margin: 30px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        #searching {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 42, 42, 0.2);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #game-ui {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            z-index: 50;
+            display: none;
+            pointer-events: none;
+        }
+
+        .timer-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .timer {
+            font-size: 42px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .status-pill {
+            background: rgba(255, 42, 42, 0.15);
+            border: 1px solid var(--primary);
+            padding: 6px 16px;
+            border-radius: 100px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 15px var(--primary-glow);
+            backdrop-filter: blur(5px);
+        }
+
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="lobby-ui">
+        <div id="initial-ui">
+            <h1>NERVE</h1>
+            <div class="subtitle">Descent into Darkness</div>
+
+            <div class="input-group">
+                <button class="btn" onclick="joinQueue()">Quick Match</button>
+                <button class="btn btn-secondary" onclick="createBotMatch()">Solo / Bot Operation</button>
+            </div>
+
+            <div class="divider">Private Operation</div>
+
+            <div class="input-group">
+                <input type="text" id="private-room-id" placeholder="Enter Room Token...">
+                <button class="btn btn-secondary" onclick="joinPrivate()">Join Private</button>
+            </div>
+        </div>
+
+        <div id="searching">
+            <div class="spinner"></div>
+            <div style="letter-spacing: 2px; font-weight: 700; color: #666;">SEARCHING FOR PLAYERS...</div>
+            <div id="bot-status" style="font-size: 12px; opacity: 0.5;">Filling with bots in <span
+                    id="queue-timer">10</span>s</div>
+            <button class="btn btn-secondary" onclick="createBotMatch()"
+                style="margin-top: 10px; font-size: 12px; padding: 10px 20px;">Skip to Bot Operation</button>
+        </div>
+
+        <div id="lobby-view" style="display: none; flex-direction: column; gap: 20px;">
+            <div style="text-align: left;">
+                <div style="font-size: 12px; color: var(--primary); font-weight: 700; letter-spacing: 2px;">SECURE
+                    CHANNEL ESTABLISHED</div>
+                <h2 id="room-token-display" style="margin: 5px 0; font-size: 32px; letter-spacing: 4px;">TOKEN: ----
+                </h2>
+            </div>
+
+            <div id="player-list"
+                style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px; max-height: 200px; overflow-y: auto;">
+                <!-- Players will be listed here -->
+            </div>
+
+            <div id="host-controls" style="display: none; flex-direction: column; gap: 15px;">
+                <div class="lobby-controls" id="host-controls-inner" style="display: none;">
+                    <div
+                        style="margin-bottom: 15px; background: rgba(255,42,42,0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,42,42,0.3);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <label>Hunters:</label>
+                            <input type="number" id="hunters-count" min="1" max="2" value="1"
+                                style="width: 50px; background: #222; border: 1px solid #444; color: white; padding: 2px 5px;">
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <label>Survivors:</label>
+                            <input type="number" id="survivors-count" min="1" max="15" value="7"
+                                style="width: 50px; background: #222; border: 1px solid #444; color: white; padding: 2px 5px;">
+                        </div>
+                        <button onclick="updateRoomSettings()"
+                            style="width: 100%; padding: 5px; font-size: 0.8em; margin-bottom: 15px;">Update
+                            Limits</button>
+
+                        <label
+                            style="display: flex; align-items: center; cursor: pointer; justify-content: center; font-size: 0.9em; color: #ff2a2a;">
+                            <input type="checkbox" id="fill-bots" style="margin-right: 10px;"> Fill empty slots with
+                            Bots
+                        </label>
+                    </div>
+                    <button class="primary-btn" onclick="requestStartGame()">Initiate Operation</button>
+                </div>
+            </div>
+            <div id="wait-msg" style="font-size: 14px; opacity: 0.6; font-style: italic;">
+                Waiting for host to initiate...
+            </div>
+        </div>
+
+        <div id="results-view"
+            style="display: none; height: 100%; flex-direction: column; padding: 30px; border-radius: 12px; background: rgba(5,5,5,0.95); backdrop-filter: blur(25px); border: 2px solid #ff2a2a;">
+            <h1 id="result-title"
+                style="text-align: center; color: #ff2a2a; margin-bottom: 10px; text-transform: uppercase; font-size: 2.5em; letter-spacing: 3px;">
+                MISSION ENDED</h1>
+            <p id="result-reason" style="text-align: center; opacity: 0.6; margin-bottom: 30px;"></p>
+
+            <div style="flex: 1; overflow-y: auto;" id="result-cards">
+                <!-- Result cards here -->
+            </div>
+
+            <div style="display: flex; gap: 20px; margin-top: 25px;">
+                <button id="play-again-btn" onclick="sendPlayAgain()"
+                    style="flex: 1; padding: 15px; background: #ff2a2a; color: white; border: none; font-weight: bold; border-radius: 8px; cursor: pointer; display: none;">Play
+                    Again</button>
+                <button onclick="location.reload()"
+                    style="flex: 1; padding: 15px; background: #333; color: white; border: none; font-weight: bold; border-radius: 8px; cursor: pointer;">Find
+                    New Lobby</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-ui">
+        <div class="timer-container">
+            <div id="game-timer" class="timer">3:00</div>
+            <div id="survivor-count-container"
+                style="display: none; height: 32px; align-items: center; justify-content: center; background: rgba(255, 42, 42, 0.2); border: 1px solid var(--primary); color: var(--primary); padding: 0 15px; border-radius: 16px; font-weight: 800; font-size: 13px; letter-spacing: 1px;">
+                REMAINING: <span id="survivor-count-val">0</span>
+            </div>
+            <div id="status-pill" class="status-pill">Loading</div>
+            <div id="role-text" class="status-pill"
+                style="border-color: #666; color: #aaa; background: rgba(255,255,255,0.05);">SURVIVOR</div>
+        </div>
+    </div>
+
+    <div id="game-container"></div>
+
+    <div id="mobile-controls">
+        <div id="joystick-container" class="joystick-base">
+            <div id="joystick-thumb" class="joystick-thumb"></div>
+        </div>
+        <div id="flashlight-btn" class="action-button">🔦</div>
+        <div id="action-main-btn" class="action-button">ACTION</div>
+    </div>
+
+    <script type="module" src="firebase-setup.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="game.js"></script>
+    <script>
+        let socket = io({ transports: ['websocket', 'polling'] });
+        let queueInterval;
+        let count = 10;
+        let isHost = false;
+
+        function joinQueue() {
+            document.getElementById('initial-ui').style.display = 'none';
+            document.getElementById('searching').style.display = 'flex';
+            socket.emit('joinQueue');
+
+            queueInterval = setInterval(() => {
+                count--;
+                document.getElementById('queue-timer').innerText = count;
+                if (count <= 0) {
+                    clearInterval(queueInterval);
+                    createBotMatch();
+                }
+            }, 1000);
+        }
+
+        function joinPrivate() {
+            const roomId = document.getElementById('private-room-id').value || Math.random().toString(36).substr(2, 6).toUpperCase();
+            document.getElementById('initial-ui').style.display = 'none';
+            document.getElementById('lobby-view').style.display = 'flex';
+            startGameWithSocket(socket, roomId, 'private');
+        }
+
+        function updateRoomSettings() {
+            const hCount = parseInt(document.getElementById('hunters-count').value);
+            const sCount = parseInt(document.getElementById('survivors-count').value);
+            console.log('Updating settings:', hCount, sCount);
+            socket.emit('updateSettings', { hunters: hCount, survivors: sCount });
+        }
+
+        function createBotMatch() {
+            if (queueInterval) clearInterval(queueInterval);
+            const roomId = 'bot_match_' + Date.now();
+            console.log('Creating bot match:', roomId);
+
+            const requestedRole = (Math.random() < 0.125) ? 'hunter' : 'survivor';
+
+            // Auto-start once room is ready
+            socket.once('roomUpdate', () => {
+                console.log('Bot room ready, instantly starting...');
+                socket.emit('startGame', { fillBots: true });
+            });
+
+            document.getElementById('initial-ui').style.display = 'none';
+            document.getElementById('searching').style.display = 'none';
+            document.getElementById('lobby-view').style.display = 'none';
+            startGameWithSocket(socket, roomId, 'bot', requestedRole);
+        }
+
+        function requestStartGame() {
+            const checkbox = document.getElementById('fill-bots');
+            const fillBots = checkbox ? checkbox.checked : false;
+            console.log('Requesting game start, bots:', fillBots);
+            socket.emit('startGame', { fillBots });
+        }
+
+        function sendPlayAgain() {
+            socket.emit('playAgain');
+        }
+
+        socket.on('gameOver', (data) => {
+            document.getElementById('lobby-ui').style.display = 'flex'; // Make sure parent is visible
+            document.getElementById('initial-ui').style.display = 'none';
+            document.getElementById('searching').style.display = 'none';
+            document.getElementById('lobby-view').style.display = 'none';
+            // Delay hiding the game container so the fade out plays
+            setTimeout(() => {
+                document.getElementById('game-container').style.display = 'none';
+                document.getElementById('game-ui').style.display = 'none';
+                document.getElementById('results-view').style.display = 'flex';
+            }, 1000);
+
+            document.getElementById('result-reason').innerText = data.reason;
+            const container = document.getElementById('result-cards');
+            container.innerHTML = '';
+
+            // Handle host button
+            // const isHost = socket.id === data.results[socket.id]?.hostId || false; // This might be stale if host left
+            // Actually check if current player is the room's host
+            // (The server sends current hostId in roomUpdate, let's assume we have a global isHost)
+
+            // Sort by placement for survivors, hunters at top
+            const players = Object.values(data.results).sort((a, b) => {
+                if (a.role === 'hunter') return -1;
+                if (b.role === 'hunter') return 1;
+                return (a.stats.placement || 99) - (b.stats.placement || 99);
+            });
+
+            players.forEach(p => {
+                const card = document.createElement('div');
+                card.style.cssText = 'background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border-left: 4px solid ' + (p.role === 'hunter' ? '#ff2a2a' : '#2aafff') + '; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;';
+
+                let statsHtml = '';
+                if (p.role === 'hunter') {
+                    statsHtml = `<div style="text-align: right;"><span style="font-size: 1.5em; font-weight: bold;">${p.stats.kills}</span><br><span style="opacity: 0.5; font-size: 0.8em;">KILLS</span></div>`;
+                } else {
+                    const time = `${Math.floor(p.stats.surviveTime / 60)}m ${p.stats.surviveTime % 60}s`;
+                    statsHtml = `
+                        <div style="display: flex; gap: 20px; text-align: right;">
+                            <div><span style="font-weight: bold;">#${p.stats.placement || '-'}</span><br><span style="opacity: 0.5; font-size: 0.7em;">RANK</span></div>
+                            <div><span style="font-weight: bold;">${time}</span><br><span style="opacity: 0.5; font-size: 0.7em;">SURVIVED</span></div>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div>
+                        <div style="font-weight: bold; font-size: 1.1em;">${p.name}${p.id === socket.id ? ' (YOU)' : ''}</div>
+                        <div style="font-size: 0.8em; opacity: 0.5;">${p.role.toUpperCase()} ${p.isBot ? ' [BOT]' : ''}</div>
+                    </div>
+                    ${statsHtml}
+                `;
+                container.appendChild(card);
+            });
+        });
+
+        function transitionToGame() {
+            document.getElementById('lobby-ui').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+            document.getElementById('game-ui').style.display = 'block';
+        }
+
+        socket.on('roomUpdate', (data) => {
+            const tokenEl = document.getElementById('lobby-token');
+            if (tokenEl) tokenEl.innerText = data.roomId;
+            const rtDisplay = document.getElementById('room-token-display');
+            if (rtDisplay) rtDisplay.innerText = `TOKEN: ${data.roomId}`;
+
+            const playerList = document.getElementById('player-list'); // Changed from lobby-player-list to player-list
+            const resultView = document.getElementById('results-view');
+
+            // If we get a roomUpdate and it's lobby state, transition back if in results
+            if (data.state === 'lobby' && resultView.style.display === 'flex') {
+                resultView.style.display = 'none';
+                document.getElementById('lobby-view').style.display = 'flex';
+            }
+
+            if (playerList) {
+                playerList.innerHTML = '';
+                Object.values(data.players).forEach(p => {
+                    const item = document.createElement('div');
+                    item.className = 'player-item' + (p.id === socket.id ? ' you' : '');
+                    const roleColor = p.role === 'hunter' ? '#ff2a2a' : '#2aafff';
+                    item.innerHTML = `
+                        <span style="color: ${roleColor}; font-weight: bold; margin-right: 10px;">[${p.role.toUpperCase()}]</span>
+                        <span>${p.name}${p.id === socket.id ? ' (YOU)' : ''}</span>
+                    `;
+                    playerList.appendChild(item);
+                });
+            }
+
+            const isHost = socket.id === data.hostId;
+            const hostControls = document.getElementById('host-controls');
+            if (hostControls) hostControls.style.display = isHost ? 'flex' : 'none';
+            const innerControls = document.getElementById('host-controls-inner');
+            if (innerControls) innerControls.style.display = isHost ? 'block' : 'none';
+            const waitMsg = document.getElementById('wait-msg');
+            if (waitMsg) waitMsg.style.display = isHost ? 'none' : 'block';
+
+            const paBtn = document.getElementById('play-again-btn');
+            if (paBtn) paBtn.style.display = isHost ? 'block' : 'none';
+
+            if (data.settings) {
+                const hInput = document.getElementById('hunters-count');
+                const sInput = document.getElementById('survivors-count');
+                if (hInput) hInput.value = data.settings.hunters;
+                if (sInput) sInput.value = data.settings.survivors;
+            }
+        });
+
+        socket.on('matchFound', (data) => {
+            clearInterval(queueInterval);
+            document.getElementById('searching').style.display = 'none';
+            document.getElementById('lobby-view').style.display = 'flex';
+            startGameWithSocket(socket, data.roomId, 'public');
+        });
+
+        socket.on('init', (data) => {
+            transitionToGame();
+            // The game.js will handle the 'init' event too
+        });
+    </script>
+</body>
+
+</html>
