@@ -20,6 +20,7 @@
             -webkit-tap-highlight-color: transparent;
             user-select: none;
             touch-action: none;
+            box-sizing: border-box;
         }
 
         body,
@@ -125,11 +126,42 @@
         @media (max-width: 900px) {
             #lobby-ui {
                 width: 90%;
-                padding: 30px;
+                padding: 20px;
             }
 
-            #mobile-controls {
-                display: block;
+            h1 {
+                font-size: 32px;
+                letter-spacing: 4px;
+            }
+
+            .subtitle {
+                font-size: 12px;
+                margin-bottom: 20px;
+            }
+
+            #game-ui {
+                top: 20px;
+                left: 20px;
+                right: 20px;
+            }
+
+            .timer-container {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .timer {
+                font-size: 28px;
+            }
+
+            .status-pill {
+                padding: 4px 10px;
+                font-size: 11px;
+            }
+
+            .btn {
+                padding: 12px 20px;
+                font-size: 14px;
             }
         }
 
@@ -336,13 +368,89 @@
 
 <body>
     <div id="lobby-ui">
-        <div id="initial-ui">
+        <div id="booting-ui"
+            style="display: none; position: absolute; top:0; left:0; width:100%; height:100%; z-index:9999; background: rgba(5,5,5,0.95); flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;">
+            <div class="spinner"
+                style="margin-bottom: 30px; border-color: rgba(255, 42, 42, 0.4); border-top-color: var(--primary); width: 60px; height: 60px;">
+            </div>
+            <h2 style="color: #ff2a2a; margin-bottom: 20px; font-weight: 900; letter-spacing: 3px;">INITIALIZING
+                SERVER...</h2>
+            <p style="color: #ccc; max-width: 500px; line-height: 1.6;">The Nerve operation server runs on a cold-start
+                backend. Since it was inactive, the container is currently booting up.<br><br><span
+                    style="color: var(--primary); font-weight: bold;">This may take 1 to 5 minutes.</span> Hold tight,
+                you will automatically be connected once the uplink is established.</p>
+            <button class="btn btn-secondary" style="margin-top: 30px;" onclick="startOfflineMode()">Play Offline
+                Mini-Game Waiter</button>
+        </div>
+
+        <div id="settings-ui" style="display: none; flex-direction: column; text-align: left;">
+            <h2
+                style="color: var(--primary); margin-top: 0; margin-bottom: 20px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase;">
+                Keybind Settings</h2>
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="font-weight: bold; opacity: 0.8;">Move Up:</label>
+                    <input type="text" id="key-up" readonly onkeydown="captureKey(event, this)"
+                        style="width: 100px; text-align: center; cursor: pointer;">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="font-weight: bold; opacity: 0.8;">Move Down:</label>
+                    <input type="text" id="key-down" readonly onkeydown="captureKey(event, this)"
+                        style="width: 100px; text-align: center; cursor: pointer;">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="font-weight: bold; opacity: 0.8;">Move Left:</label>
+                    <input type="text" id="key-left" readonly onkeydown="captureKey(event, this)"
+                        style="width: 100px; text-align: center; cursor: pointer;">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="font-weight: bold; opacity: 0.8;">Move Right:</label>
+                    <input type="text" id="key-right" readonly onkeydown="captureKey(event, this)"
+                        style="width: 100px; text-align: center; cursor: pointer;">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="font-weight: bold; opacity: 0.8;">Sprint:</label>
+                    <input type="text" id="key-sprint" readonly onkeydown="captureKey(event, this)"
+                        style="width: 100px; text-align: center; cursor: pointer;">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="font-weight: bold; opacity: 0.8;">Flashlight:</label>
+                    <input type="text" id="key-flash" readonly onkeydown="captureKey(event, this)"
+                        style="width: 100px; text-align: center; cursor: pointer;">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="font-weight: bold; opacity: 0.8;">Action / Attack:</label>
+                    <input type="text" id="key-action" readonly onkeydown="captureKey(event, this)"
+                        style="width: 100px; text-align: center; cursor: pointer;">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="font-weight: bold; opacity: 0.8;">Flashlight Mode:</label>
+                    <select id="flash-mode"
+                        style="width: 100px; text-align: center; cursor: pointer; background: rgba(255,42,42,0.1); color: white; border: 1px solid var(--primary); padding: 5px;">
+                        <option value="toggle" style="color: black;">Toggle</option>
+                        <option value="hold" style="color: black;">Hold</option>
+                    </select>
+                </div>
+            </div>
+            <div
+                style="font-size: 13px; color: var(--primary); margin-bottom: 20px; text-align: center; font-weight: bold;">
+                Click an input & press a key to rebind.</div>
+            <div style="display: flex; gap: 15px;">
+                <button class="btn" style="flex: 1; padding: 12px 0;" onclick="saveSettings()">Save</button>
+                <button class="btn btn-secondary" style="flex: 1; padding: 12px 0;"
+                    onclick="closeSettings()">Cancel</button>
+            </div>
+        </div>
+
+        <div id="initial-ui" style="display: none; flex-direction: column;">
             <h1>NERVE</h1>
             <div class="subtitle">Descent into Darkness</div>
 
             <div class="input-group">
                 <button class="btn" onclick="joinQueue()">Quick Match</button>
                 <button class="btn btn-secondary" onclick="createBotMatch()">Solo / Bot Operation</button>
+                <button class="btn btn-secondary" style="margin-top: 10px; font-size: 14px; padding: 12px;"
+                    onclick="openSettings()">⚙️ Keybind Settings</button>
             </div>
 
             <div class="divider">Private Operation</div>
@@ -455,12 +563,38 @@
     <script type="module" src="firebase-setup.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="offline_mode.js"></script>
     <script src="game.js"></script>
     <script>
-        let socket = io({ transports: ['websocket', 'polling'] });
+        let socket = io('https://nerve-server.onrender.com', { transports: ['websocket', 'polling'] });
         let queueInterval;
         let count = 10;
         let isHost = false;
+        let isConnected = false;
+
+        // Show the 5-minute boot warning ONLY if connection takes longer than 1.5 seconds
+        setTimeout(() => {
+            if (!isConnected) {
+                document.getElementById('booting-ui').style.display = 'flex';
+            }
+        }, 1500);
+
+        socket.on('connect', () => {
+            isConnected = true;
+            console.log('Connected to Render Server!');
+            document.getElementById('booting-ui').style.display = 'none';
+            document.getElementById('initial-ui').style.display = 'flex';
+            document.getElementById('settings-ui').style.display = 'none';
+        });
+
+        socket.on('disconnect', () => {
+            isConnected = false;
+            document.getElementById('booting-ui').style.display = 'flex';
+            document.getElementById('initial-ui').style.display = 'none';
+            document.getElementById('settings-ui').style.display = 'none';
+            document.getElementById('lobby-view').style.display = 'none';
+            document.getElementById('searching').style.display = 'none';
+        });
 
         function joinQueue() {
             document.getElementById('initial-ui').style.display = 'none';
@@ -489,6 +623,28 @@
             const sCount = parseInt(document.getElementById('survivors-count').value);
             console.log('Updating settings:', hCount, sCount);
             socket.emit('updateSettings', { hunters: hCount, survivors: sCount });
+        }
+
+        function startOfflineMode() {
+            if (socket) socket.disconnect();
+
+            // Re-assign socket logic safely into standard window scope if needed, or just map it 
+            socket = new OfflineSocket();
+            // Preserve real socket references if needed on reconnect, but here we fully detach
+            window.originalSocket = io;
+
+            document.getElementById('booting-ui').style.display = 'none';
+            document.getElementById('lobby-view').style.display = 'flex';
+
+            // Emulate Bot Match Logic
+            const roomId = 'offline_bot_match_' + Date.now();
+            const requestedRole = (Math.random() < 0.125) ? 'hunter' : 'survivor';
+
+            socket.once('roomUpdate', () => {
+                socket.emit('startGame', { fillBots: true });
+            });
+
+            startGameWithSocket(socket, roomId, 'bot', requestedRole);
         }
 
         function createBotMatch() {
@@ -530,6 +686,7 @@
             setTimeout(() => {
                 document.getElementById('game-container').style.display = 'none';
                 document.getElementById('game-ui').style.display = 'none';
+                document.getElementById('mobile-controls').style.display = 'none';
                 document.getElementById('results-view').style.display = 'flex';
             }, 1000);
 
@@ -581,6 +738,9 @@
             document.getElementById('lobby-ui').style.display = 'none';
             document.getElementById('game-container').style.display = 'block';
             document.getElementById('game-ui').style.display = 'block';
+            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                document.getElementById('mobile-controls').style.display = 'block';
+            }
         }
 
         socket.on('roomUpdate', (data) => {
@@ -642,6 +802,54 @@
             transitionToGame();
             // The game.js will handle the 'init' event too
         });
+
+        function captureKey(e, el) {
+            e.preventDefault();
+            let key = e.key.toUpperCase();
+            if (key === ' ') key = 'SPACE';
+            if (key.startsWith('ARROW')) key = key.replace('ARROW', '');
+            if (key === 'ESCAPE') return;
+            el.value = key;
+        }
+
+        function openSettings() {
+            document.getElementById('initial-ui').style.display = 'none';
+            document.getElementById('settings-ui').style.display = 'flex';
+
+            const saved = localStorage.getItem('nerve_keys');
+            const conf = saved ? JSON.parse(saved) : {
+                up: 'W', down: 'S', left: 'A', right: 'D', sprint: 'SHIFT', flash: 'F', action: 'SPACE', flashMode: 'toggle'
+            };
+
+            document.getElementById('key-up').value = conf.up;
+            document.getElementById('key-down').value = conf.down;
+            document.getElementById('key-left').value = conf.left;
+            document.getElementById('key-right').value = conf.right;
+            document.getElementById('key-sprint').value = conf.sprint;
+            document.getElementById('key-flash').value = conf.flash;
+            document.getElementById('key-action').value = conf.action;
+            document.getElementById('flash-mode').value = conf.flashMode || 'toggle';
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-ui').style.display = 'none';
+            document.getElementById('initial-ui').style.display = 'flex';
+        }
+
+        function saveSettings() {
+            const conf = {
+                up: document.getElementById('key-up').value,
+                down: document.getElementById('key-down').value,
+                left: document.getElementById('key-left').value,
+                right: document.getElementById('key-right').value,
+                sprint: document.getElementById('key-sprint').value,
+                flash: document.getElementById('key-flash').value,
+                action: document.getElementById('key-action').value,
+                flashMode: document.getElementById('flash-mode').value
+            };
+            localStorage.setItem('nerve_keys', JSON.stringify(conf));
+            closeSettings();
+        }
     </script>
 </body>
 

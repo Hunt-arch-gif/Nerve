@@ -16,29 +16,32 @@ function generateMap(type) {
 
     if (type === 'Maze') {
         width = 1600; height = 1600; botCount = 20; objectCount = 150;
-        for (let i = 0; i < 15; i++) {
-            walls.push({ x: i * 160, y: 0, w: 20, h: 1600 });
-            if (i % 2 === 0) {
-                walls.push({ x: i * 160, y: 400, w: 160, h: 20 });
-                walls.push({ x: i * 160, y: 1200, w: 160, h: 20 });
-            } else {
-                walls.push({ x: i * 160, y: 800, w: 160, h: 20 });
-            }
+        for (let i = 1; i < 10; i++) {
+            let gapY = (i % 2 === 0) ? 250 : 1200;
+            walls.push({ x: i * 160, y: 0, w: 20, h: gapY });
+            walls.push({ x: i * 160, y: gapY + 250, w: 20, h: 1600 - (gapY + 250) });
+            if (i % 2 === 0) walls.push({ x: i * 160, y: 800, w: 160, h: 20 });
         }
     } else if (type === 'School') {
         width = 2800; height = 1600; botCount = 25; objectCount = 200;
-        walls.push({ x: 0, y: 780, w: width, h: 40 });
-        for (let i = 0; i < 12; i++) {
-            walls.push({ x: i * 240, y: 0, w: 20, h: 700 });
-            walls.push({ x: i * 240, y: 900, w: 20, h: 700 });
+        // Central hallway with doors
+        walls.push({ x: 0, y: 780, w: 1200, h: 40 });
+        // Gap in the middle for the hallway crossing
+        walls.push({ x: 1600, y: 780, w: 1200, h: 40 });
+
+        for (let i = 1; i < 12; i++) {
+            // Top rooms with gaps at bottom
+            walls.push({ x: i * 240, y: 0, w: 20, h: 650 });
+            // Bottom rooms with gaps at top
+            walls.push({ x: i * 240, y: 950, w: 20, h: 650 });
         }
     } else if (type === 'Forest') {
         width = 3200; height = 3200; botCount = 35; objectCount = 300;
         for (let i = 0; i < 250; i++) {
             decorations.push({
                 type: 'tree',
-                x: Math.random() * width,
-                y: Math.random() * height,
+                x: 100 + Math.random() * (width - 200),
+                y: 100 + Math.random() * (height - 200),
                 radius: 20 + Math.random() * 40
             });
         }
@@ -82,11 +85,27 @@ function generateMap(type) {
     return { type, width, height, botCount, walls, decorations, objects };
 }
 
+function findValidSpawn(map) {
+    for (let i = 0; i < 100; i++) {
+        const x = 50 + Math.random() * (map.width - 100);
+        const y = 50 + Math.random() * (map.height - 100);
+        let valid = true;
+        for (let w of map.walls) {
+            if (x + 30 > w.x && x - 30 < w.x + w.w && y + 30 > w.y && y - 30 < w.y + w.h) {
+                valid = false; break;
+            }
+        }
+        if (valid) return { x, y };
+    }
+    return { x: map.width / 2, y: map.height / 2 };
+}
+
 function createBot(id, role, room) {
+    const spawnPos = findValidSpawn(room.map);
     return {
         id,
-        x: room.map.width / 2 + (Math.random() * 400 - 200),
-        y: room.map.height / 2 + (Math.random() * 400 - 200),
+        x: spawnPos.x,
+        y: spawnPos.y,
         rotation: 0,
         role,
         camouflage: SHAPES[Math.floor(Math.random() * SHAPES.length)],
@@ -174,12 +193,14 @@ function init(socketIo) {
             let role = (hunterCount < room.maxHunters) ? 'hunter' : 'survivor';
             if (data.requestedRole && Object.keys(room.players).length === 0) role = data.requestedRole;
 
+            const isLateJoin = room.state === 'playing';
+            const spawnPos = findValidSpawn(room.map);
             room.players[socket.id] = {
                 id: socket.id,
                 name: `Player ${Object.keys(room.players).length + 1}`,
-                x: room.map.width / 2, y: room.map.height / 2, rotation: 0,
+                x: spawnPos.x, y: spawnPos.y, rotation: 0,
                 role: role, camouflage: SHAPES[Math.floor(Math.random() * SHAPES.length)],
-                isLightOn: false, isCharging: false, isDead: false, isSlowed: false, isBot: false,
+                isLightOn: false, isCharging: false, isDead: isLateJoin, isSlowed: false, isBot: false,
                 stats: { kills: 0, reveals: 0, surviveTime: 0, placement: 0 }
             };
             socket.roomId = roomId;

@@ -160,6 +160,12 @@ function startGameWithSocket(socket, roomId, roomType = 'match', requestedRole) 
             if (deadPlayer.visualGraphic) deadPlayer.visualGraphic.setVisible(false);
             if (deadPlayer.shapeGraphic) deadPlayer.shapeGraphic.setVisible(false);
 
+            if (deadPlayer === player) {
+                if (deadPlayer.body) deadPlayer.body.checkCollision.none = true;
+                const statusPill = document.getElementById('role-text');
+                if (statusPill) { statusPill.innerText = "SPECTATING"; statusPill.style.color = "#aaaaaa"; }
+            }
+
             if (currentScene) {
                 const blood = currentScene.add.particles(deadPlayer.x, deadPlayer.y, 'dust', {
                     speed: { min: 50, max: 200 },
@@ -281,7 +287,12 @@ function setupGame(scene, data) {
         spawnPlayer(scene, data.players[id], id === socketRef.id);
     });
 
-    scene.cameras.main.startFollow(player, true, 0.1, 0.1);
+    if (player) {
+        scene.cameras.main.startFollow(player, true, 0.1, 0.1);
+    } else {
+        console.warn("Player not found in init data, camera follow deferred.");
+        // We'll queue it to try again when spawnPlayer is next called locally.
+    }
 }
 
 function spawnPlayer(scene, data, isLocal) {
@@ -292,11 +303,23 @@ function spawnPlayer(scene, data, isLocal) {
     const p = scene.physics.add.sprite(data.x, data.y, spriteKey);
     p.setAlpha(0.001); // Hide the problematic asset entirely while keeping physics body active!
     p.setScale(0.15);
+
+    // Properly set the circular physics hitbox unscaled size.
+    // Making hitboxes equal for both roles so hunters don't get stuck in terrain survivors can pass.
+    const rad = 20;
+    const unscaledRad = rad / 0.15;
+    p.body.setCircle(unscaledRad, (p.width / 2) - unscaledRad, (p.height / 2) - unscaledRad);
+
     p.id = data.id;
     p.role = data.role;
     p.isLightOn = data.isLightOn;
     p.isCharging = data.isCharging || false;
     p.isDead = data.isDead;
+    if (p.isDead) {
+        if (p.visualGraphic) p.visualGraphic.setVisible(false);
+        if (p.shapeGraphic) p.shapeGraphic.setVisible(false);
+        if (isLocal && p.body) p.body.checkCollision.none = true;
+    }
     p.camouflage = data.camouflage || 'circle';
 
     // Create a beautiful decoupled visual graphic
@@ -312,6 +335,10 @@ function spawnPlayer(scene, data, isLocal) {
     if (isLocal) {
         player = p;
         p.setCollideWorldBounds(true);
+        // Start follow here in case we joined late or it was deferred
+        if (currentScene && currentScene.cameras.main) {
+            currentScene.cameras.main.startFollow(player, true, 0.1, 0.1);
+        }
         // Add a slight delay to allow world to settle
         scene.time.delayedCall(100, () => {
             scene.physics.add.collider(player, walls);
@@ -326,14 +353,51 @@ function spawnPlayer(scene, data, isLocal) {
 }
 
 function update(time, delta) {
-    if (!player || player.isDead) return;
+    if (!player) return;
 
     if (!this.keys) {
-        this.keys = this.input.keyboard.addKeys('W,A,S,D,SHIFT,F,SPACE');
+        const saved = localStorage.getItem('nerve_keys');
+        const conf = saved ? JSON.parse(saved) : {
+            up: 'W', down: 'S', left: 'A', right: 'D', sprint: 'SHIFT', flash: 'F', action: 'SPACE', flashMode: 'toggle'
+        };
+        this.flashMode = conf.flashMode || 'toggle';
+
+        this.keys = {
+            up: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes[conf.up] || Phaser.Input.Keyboard.KeyCodes.W),
+            down: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes[conf.down] || Phaser.Input.Keyboard.KeyCodes.S),
+            left: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes[conf.left] || Phaser.Input.Keyboard.KeyCodes.A),
+            right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes[conf.right] || Phaser.Input.Keyboard.KeyCodes.D),
+            sprint: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes[conf.sprint] || Phaser.Input.Keyboard.KeyCodes.SHIFT),
+            flash: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes[conf.flash] || Phaser.Input.Keyboard.KeyCodes.F),
+            action: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes[conf.action] || Phaser.Input.Keyboard.KeyCodes.SPACE)
+        };
         this.cursors = this.input.keyboard.createCursorKeys();
     }
 
-    const { W, A, S, D, SHIFT, F, SPACE } = this.keys;
+    if (player.isDead) {
+        // Freecam mode for spectators
+        let vx = 0, vy = 0;
+        const speed = 500;
+        if (this.cursors.left.isDown || this.keys.left.isDown) vx = -1;
+        else if (this.cursors.right.isDown || this.keys.right.isDown) vx = 1;
+        if (this.cursors.up.isDown || this.keys.up.isDown) vy = -1;
+        else if (this.cursors.down.isDown || this.keys.down.isDown) vy = 1;
+
+        if (isMobile && (Math.abs(joystickVector.x) > 0.1 || Math.abs(joystickVector.y) > 0.1)) {
+            vx = joystickVector.x;
+            vy = joystickVector.y;
+        }
+
+        if (!isMobile && (vx !== 0 || vy !== 0)) {
+            const length = Math.sqrt(vx * vx + vy * vy);
+            vx /= length;
+            vy /= length;
+        }
+
+        player.body.setVelocity(vx * speed, vy * speed);
+        renderLighting(this);
+        return;
+    }
 
     // Game Stats UI (Timer & Survivor Count)
     const isHunter = player.role === 'hunter';
@@ -351,7 +415,7 @@ function update(time, delta) {
     }
 
     // Sprint logic
-    const isSprintRequested = SHIFT.isDown || (isMobile && player.role === 'survivor' && mobileActionDown); // Action button acts as sprint for survivors
+    const isSprintRequested = this.keys.sprint.isDown || (isMobile && player.role === 'survivor' && mobileActionDown); // Action button acts as sprint for survivors
     let isSprinting = false;
 
     if (player.role === 'survivor') {
@@ -385,10 +449,10 @@ function update(time, delta) {
 
     let vx = 0, vy = 0;
 
-    if (this.cursors.left.isDown || A.isDown) vx = -1;
-    else if (this.cursors.right.isDown || D.isDown) vx = 1;
-    if (this.cursors.up.isDown || W.isDown) vy = -1;
-    else if (this.cursors.down.isDown || S.isDown) vy = 1;
+    if (this.cursors.left.isDown || this.keys.left.isDown) vx = -1;
+    else if (this.cursors.right.isDown || this.keys.right.isDown) vx = 1;
+    if (this.cursors.up.isDown || this.keys.up.isDown) vy = -1;
+    else if (this.cursors.down.isDown || this.keys.down.isDown) vy = 1;
 
     // Apply Joystick
     if (isMobile && (Math.abs(joystickVector.x) > 0.1 || Math.abs(joystickVector.y) > 0.1)) {
@@ -419,11 +483,12 @@ function update(time, delta) {
         player.oldRotation = player.rotation;
     }
 
-    const flashPressed = Phaser.Input.Keyboard.JustDown(F) || mobileFDown;
-    if (mobileFDown) mobileFDown = false; // reset mobile state
+    const flashJustDown = Phaser.Input.Keyboard.JustDown(this.keys.flash) || (mobileFDown && !this.wasMobileFDown);
+    this.wasMobileFDown = mobileFDown;
+    const isFlashHeld = this.keys.flash.isDown || mobileFDown;
 
     if (player.role === 'hunter') {
-        if (flashPressed) {
+        if (flashJustDown) {
             if (player.isLightOn) {
                 player.isLightOn = false;
                 if (socketRef) socketRef.emit('toggleLight', false);
@@ -446,7 +511,7 @@ function update(time, delta) {
             }
         }
 
-        const attackRequested = SPACE.isDown || (isMobile && mobileActionDown);
+        const attackRequested = this.keys.action.isDown || (isMobile && mobileActionDown);
         if (attackRequested && !player.isCharging) {
             isKillCharging = true;
             killChargeTimer += delta;
@@ -463,9 +528,18 @@ function update(time, delta) {
         }
         drawKillBars();
     } else {
-        if (flashPressed && !player.isDead) {
-            player.isLightOn = !player.isLightOn;
-            if (socketRef) socketRef.emit('toggleLight', player.isLightOn);
+        if (!player.isDead) {
+            if (this.flashMode === 'hold') {
+                if (player.isLightOn !== isFlashHeld) {
+                    player.isLightOn = isFlashHeld;
+                    if (socketRef) socketRef.emit('toggleLight', player.isLightOn);
+                }
+            } else {
+                if (flashJustDown) {
+                    player.isLightOn = !player.isLightOn;
+                    if (socketRef) socketRef.emit('toggleLight', player.isLightOn);
+                }
+            }
         }
         handleProximityShake(this);
     }
@@ -531,31 +605,34 @@ function update(time, delta) {
                 p.visualGraphic.fillCircle(14, 7, 1.5);
             } else {
                 // Survivor - Cleaner, more "functional" look
+                const isHighlight = p.isAllyIlluminated && p !== player && player.role !== 'hunter';
+                const bodyColor = isHighlight ? 0xff0000 : 0x2c3e50;
+                const shoulderColor = isHighlight ? 0xcc0000 : 0x34495e;
+                const headColor = isHighlight ? 0xffcccc : 0xecf0f1;
+                const packColor = isHighlight ? 0x990000 : 0x7f8c8d;
+                const rimColor = isHighlight ? 0xff6666 : 0x95a5a6;
+
                 // Body
-                p.visualGraphic.fillStyle(0x2c3e50, 1);
+                p.visualGraphic.fillStyle(bodyColor, 1);
                 p.visualGraphic.fillCircle(0, 0, 20);
 
                 // Shoulder/Arms hint
-                p.visualGraphic.fillStyle(0x34495e, 1);
+                p.visualGraphic.fillStyle(shoulderColor, 1);
                 p.visualGraphic.fillCircle(-4, -12, 8);
                 p.visualGraphic.fillCircle(-4, 12, 8);
 
                 // Head
-                p.visualGraphic.fillStyle(0xecf0f1, 1);
+                p.visualGraphic.fillStyle(headColor, 1);
                 p.visualGraphic.fillCircle(8, 0, 12);
 
                 // Directional hint (small backpack or gear)
-                p.visualGraphic.fillStyle(0x7f8c8d, 1);
+                p.visualGraphic.fillStyle(packColor, 1);
                 p.visualGraphic.fillRect(-14, -8, 10, 16);
 
                 // Rim light
-                p.visualGraphic.lineStyle(2, 0x95a5a6, 0.4);
+                p.visualGraphic.lineStyle(2, rimColor, 0.4);
                 p.visualGraphic.strokeCircle(0, 0, 21);
             }
-
-            // Re-apply visibility rules to the visualGraphic
-            p.visualGraphic.setVisible(p.visible);
-            p.visualGraphic.setAlpha(p.alpha);
         } else if (p.visualGraphic && p.isDead) {
             p.visualGraphic.setVisible(false);
         }
@@ -636,12 +713,17 @@ function renderLighting(scene) {
         if (p.isDead) {
             if (p.visualGraphic) p.visualGraphic.setVisible(false);
             if (p.shapeGraphic) p.shapeGraphic.setVisible(false);
+            if (p === player && p.visualGraphic) {
+                p.visualGraphic.setVisible(true);
+                p.visualGraphic.setAlpha(0.2); // Ghostly spectate form for yourself
+            }
             return;
         }
 
         let shouldShowHuman = false;
         let shouldShowShape = false;
         let finalAlpha = 1.0;
+        p.isAllyIlluminated = false;
 
         if (p.role === 'hunter') {
             shouldShowHuman = true;
@@ -668,7 +750,7 @@ function renderLighting(scene) {
                 // Survivor viewing another survivor
                 if (illuminatedByAlly) {
                     shouldShowHuman = true;
-                    if (p.visualGraphic) p.visualGraphic.setTint(0xff0000); // Red highlight!
+                    p.isAllyIlluminated = true; // Red highlight!
                 } else {
                     shouldShowShape = true;
                     if (p.shapeGraphic) p.shapeGraphic.setAlpha(1.0);
@@ -678,7 +760,6 @@ function renderLighting(scene) {
                 if (p === player) {
                     shouldShowHuman = true;
                     if (p.visualGraphic) {
-                        p.visualGraphic.clearTint();
                         p.visualGraphic.setAlpha(revealedToHunter ? 1.0 : 0.6);
                     }
                 }
@@ -693,11 +774,6 @@ function renderLighting(scene) {
         if (p.visualGraphic) {
             p.visualGraphic.setVisible(shouldShowHuman);
             p.visualGraphic.setDepth(55);
-            if (p !== player && !isHunter && shouldShowHuman) {
-                // already handled tint above
-            } else if (p.visualGraphic.isTinted && p !== player) {
-                p.visualGraphic.clearTint();
-            }
         }
     });
 
@@ -926,11 +1002,12 @@ function setupMobileControls() {
     });
 
     if (actionBtn) {
-        actionBtn.addEventListener('touchstart', () => { mobileActionDown = true; });
-        actionBtn.addEventListener('touchend', () => { mobileActionDown = false; });
+        actionBtn.addEventListener('touchstart', (e) => { e.preventDefault(); mobileActionDown = true; });
+        actionBtn.addEventListener('touchend', (e) => { e.preventDefault(); mobileActionDown = false; });
     }
 
     if (flashBtn) {
-        flashBtn.addEventListener('touchstart', () => { mobileFDown = true; });
+        flashBtn.addEventListener('touchstart', (e) => { e.preventDefault(); mobileFDown = true; });
+        flashBtn.addEventListener('touchend', (e) => { e.preventDefault(); mobileFDown = false; });
     }
 }
