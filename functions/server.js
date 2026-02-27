@@ -26,80 +26,191 @@ function generateMap(type) {
     let objectCount = 200;
 
     if (type === 'Maze') {
-        width = 1600;
-        height = 1600;
-        botCount = 20;
-        objectCount = 150;
-        for (let i = 0; i < 15; i++) {
-            walls.push({ x: i * 160, y: 0, w: 20, h: 1600 });
+        width = 1600; height = 1600; botCount = 20; objectCount = 150;
+
+        // Center hub (true maze around it)
+        walls.push({ x: 600, y: 600, w: 400, h: 20 });
+        walls.push({ x: 600, y: 980, w: 400, h: 20 });
+        walls.push({ x: 600, y: 600, w: 20, h: 100 }); // Gap on left
+        walls.push({ x: 600, y: 880, w: 20, h: 120 });
+        walls.push({ x: 980, y: 600, w: 20, h: 100 }); // Gap on right
+        walls.push({ x: 980, y: 880, w: 20, h: 120 });
+
+        // Outer maze walls. Using a fixed pattern to ensure connectivity without procedural deadlocks
+        for (let i = 1; i < 10; i++) {
+            let x = i * 160;
+            if (x > 500 && x < 1100) continue; // Skip area around center hub
+
             if (i % 2 === 0) {
-                walls.push({ x: i * 160, y: 400, w: 160, h: 20 });
-                walls.push({ x: i * 160, y: 1200, w: 160, h: 20 });
+                walls.push({ x: x, y: 0, w: 20, h: 400 });
+                walls.push({ x: x, y: 550, w: 20, h: 500 });
+                walls.push({ x: x, y: 1200, w: 20, h: 400 });
             } else {
-                walls.push({ x: i * 160, y: 800, w: 160, h: 20 });
+                walls.push({ x: x, y: 0, w: 20, h: 250 });
+                walls.push({ x: x, y: 400, w: 20, h: 800 });
+                walls.push({ x: x, y: 1350, w: 20, h: 250 });
             }
         }
+
+        // Add horizontal walls for the top and bottom true maze sections
+        for (let j = 1; j < 10; j++) {
+            let y = j * 160;
+            if (y > 500 && y < 1100) continue;
+            if (j % 2 === 0) {
+                walls.push({ x: 0, y: y, w: 600, h: 20 });
+                walls.push({ x: 1000, y: y, w: 600, h: 20 });
+            }
+        }
+
     } else if (type === 'School') {
-        width = 2800;
-        height = 1600;
-        botCount = 25;
-        objectCount = 200;
-        walls.push({ x: 0, y: 780, w: width, h: 40 });
-        for (let i = 0; i < 12; i++) {
-            walls.push({ x: i * 240, y: 0, w: 20, h: 700 });
-            walls.push({ x: i * 240, y: 900, w: 20, h: 700 });
+        width = 2800; height = 1600; botCount = 25; objectCount = 200;
+
+        // Central hallway horizontal walls, left side
+        walls.push({ x: 0, y: 700, w: 1200, h: 20 });
+        walls.push({ x: 0, y: 900, w: 1200, h: 20 });
+        // Gap in the middle for the hallway crossing
+        walls.push({ x: 1600, y: 700, w: 1200, h: 20 });
+        walls.push({ x: 1600, y: 900, w: 1200, h: 20 });
+
+        for (let i = 1; i < 12; i++) {
+            let rx = i * 240;
+
+            // Define Gym (top right) and Principal's Office (bottom left) as dead ends
+            let isGym = rx >= 2400;
+            let isPrincipal = rx <= 240;
+
+            if (isGym) {
+                // Gym: Huge room, only one entrance (dead end)
+                if (rx === 2400) walls.push({ x: rx, y: 0, w: 20, h: 700 }); // Left wall
+                // No middle walls in gym
+            } else if (isPrincipal) {
+                // Principal's Office: Small room, only one entrance (dead end)
+                if (rx === 240) {
+                    walls.push({ x: rx, y: 900, w: 20, h: 700 }); // Right wall
+                }
+            } else {
+                // Classrooms: Need multiple entry points (2 doorways, not large gaps)
+                // Top classrooms
+                walls.push({ x: rx, y: 0, w: 20, h: 300 });
+                walls.push({ x: rx, y: 400, w: 20, h: 300 }); // Gap at y:300-400
+
+                // Bottom classrooms
+                walls.push({ x: rx, y: 900, w: 20, h: 300 });
+                walls.push({ x: rx, y: 1300, w: 20, h: 300 }); // Gap at y:1200-1300
+            }
         }
     } else if (type === 'Forest') {
-        width = 3200;
-        height = 3200;
-        botCount = 35;
-        objectCount = 300;
-        for (let i = 0; i < 250; i++) {
-            decorations.push({
-                type: 'tree',
-                x: Math.random() * width,
-                y: Math.random() * height,
-                radius: 20 + Math.random() * 40
-            });
+        width = 3000; height = 3000; botCount = 35; objectCount = 300;
+
+        // Map Border built of trees! Impossibly thick ring of trees around the perimeter
+        for (let i = -100; i <= width + 100; i += 60) {
+            decorations.push({ type: 'tree', x: i, y: -60, radius: 45 });
+            decorations.push({ type: 'tree', x: i, y: height + 60, radius: 45 });
+            decorations.push({ type: 'tree', x: i, y: -120, radius: 50 });
+            decorations.push({ type: 'tree', x: i, y: height + 120, radius: 50 });
+        }
+        for (let j = -100; j <= height + 100; j += 60) {
+            decorations.push({ type: 'tree', x: -60, y: j, radius: 45 });
+            decorations.push({ type: 'tree', x: width + 60, y: j, radius: 45 });
+            decorations.push({ type: 'tree', x: -120, y: j, radius: 50 });
+            decorations.push({ type: 'tree', x: width + 120, y: j, radius: 50 });
+        }
+
+        // Generate normal internal trees with minimum walkable gap
+        let attempts = 0;
+        while (decorations.length < 200 + 400 && attempts < 2000) {
+            let tx = 100 + Math.random() * (width - 200);
+            let ty = 100 + Math.random() * (height - 200);
+            let tradius = 20 + Math.random() * 40;
+            let ok = true;
+            for (let d of decorations) {
+                let dist = Math.sqrt((tx - d.x) ** 2 + (ty - d.y) ** 2);
+                if (dist < tradius + d.radius + 60) { ok = false; break; }
+            }
+            if (ok) {
+                decorations.push({ type: 'tree', x: tx, y: ty, radius: tradius });
+            }
+            attempts++;
         }
     }
 
-    walls.push({ x: 0, y: 0, w: width, h: 20 });
-    walls.push({ x: 0, y: height - 20, w: width, h: 20 });
-    walls.push({ x: 0, y: 0, w: 20, h: height });
-    walls.push({ x: width - 20, y: 0, w: 20, h: height });
+    // Thick solid border walls to ensure pure black perimeter and clear edges
+    walls.push({ x: -100, y: -100, w: width + 200, h: 100 });
+    walls.push({ x: -100, y: height, w: width + 200, h: 100 });
+    walls.push({ x: -100, y: 0, w: 100, h: height });
+    walls.push({ x: width, y: 0, w: 100, h: height });
 
     const objects = [];
-    for (let i = 0; i < objectCount; i++) {
+
+    // In Forest: Generate objects in path formations
+    if (type === 'Forest') {
+        let numPaths = 15;
+        let objPerPath = 20;
+        for (let p = 0; p < numPaths; p++) {
+            let startX = 200 + Math.random() * (width - 400);
+            let startY = 200 + Math.random() * (height - 400);
+            let angle = Math.random() * Math.PI * 2;
+            let currentShape = SHAPES[Math.floor(Math.random() * 3)];
+
+            for (let i = 0; i < objPerPath && objects.length < objectCount; i++) {
+                startX += Math.cos(angle) * 70;
+                startY += Math.sin(angle) * 70;
+                angle += (Math.random() - 0.5) * 0.5; // slight curve
+
+                // Bounds check
+                if (startX < 100 || startX > width - 100 || startY < 100 || startY > height - 100) break;
+
+                let valid = true;
+                for (let d of decorations) {
+                    const dist = Math.sqrt((startX - d.x) ** 2 + (startY - d.y) ** 2);
+                    if (dist < d.radius + 40) { valid = false; break; }
+                }
+
+                if (valid) {
+                    objects.push({
+                        id: 'obj_' + objects.length,
+                        x: startX, y: startY,
+                        shape: currentShape,
+                        color: 0x555555
+                    });
+                }
+            }
+        }
+    }
+
+    // Fill remaining objects randomly for all maps
+    for (let i = objects.length; i < objectCount; i++) {
         let attempts = 0;
-        let x = 100, y = 100;
         let valid = false;
+        let x = 100, y = 100;
         while (!valid && attempts < 100) {
             x = 100 + Math.random() * (width - 200);
             y = 100 + Math.random() * (height - 200);
             valid = true;
             for (let w of walls) {
-                if (x + 24 > w.x && x - 24 < w.x + w.w && y + 24 > w.y && y - 24 < w.y + w.h) {
+                if (x + 40 > w.x && x - 40 < w.x + w.w && y + 40 > w.y && y - 40 < w.y + w.h) {
                     valid = false;
                     break;
                 }
             }
             if (valid) {
                 for (let d of decorations) {
-                    const dx = x - d.x; const dy = y - d.y;
-                    if (dx * dx + dy * dy < (d.radius + 24) * (d.radius + 24)) { valid = false; break; }
+                    const dist = Math.sqrt((x - d.x) ** 2 + (y - d.y) ** 2);
+                    if (dist < d.radius + 40) { valid = false; break; }
                 }
             }
             attempts++;
         }
 
-        objects.push({
-            id: 'obj_' + i,
-            x: x,
-            y: y,
-            shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
-            color: 0x555555
-        });
+        if (valid) {
+            objects.push({
+                id: 'obj_' + i,
+                x: x,
+                y: y,
+                shape: SHAPES[Math.floor(Math.random() * 3)],
+                color: 0x555555
+            });
+        }
     }
 
     return { type, width, height, botCount, walls, decorations, objects };

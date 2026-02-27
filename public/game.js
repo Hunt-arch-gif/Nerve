@@ -151,6 +151,13 @@ function startGameWithSocket(socket, roomId, roomType = 'match', requestedRole) 
         else if (player && player.id === data.id) player.isCharging = data.isCharging;
     });
 
+    socket.on('kill_charging', (data) => {
+        if (otherPlayers[data.id]) {
+            otherPlayers[data.id].isKillCharging = data.isCharging;
+            if (!data.isCharging) otherPlayers[data.id].killChargeTimer = 0;
+        }
+    });
+
     socket.on('player_died', (id) => {
         console.log('Player died event received for ID:', id);
         let deadPlayer = (id === socket.id && player) ? player : otherPlayers[id];
@@ -240,7 +247,9 @@ function setupGame(scene, data) {
     if (roleText && data.players[socketRef.id]) roleText.innerText = data.players[socketRef.id].role.toUpperCase();
 
     scene.physics.world.setBounds(0, 0, data.map.width, data.map.height);
-    scene.cameras.main.setBounds(0, 0, data.map.width, data.map.height);
+    // Allow camera to see a 200px pure black border outside the map bounds
+    scene.cameras.main.setBounds(-200, -200, data.map.width + 400, data.map.height + 400);
+    scene.cameras.main.setBackgroundColor('#000000');
     scene.obstacles = [];
     scene.propObstacles = [];
 
@@ -276,7 +285,7 @@ function setupGame(scene, data) {
     }
 
     data.map.objects.forEach(obj => {
-        const shape = drawShape(scene, obj.x, obj.y, obj.shape, 0x555555).setDepth(5);
+        const shape = drawShape(scene, obj.x, obj.y, obj.shape, 0x555555).setDepth(55);
         camoObjects.push(shape);
         // Camo props only block light, not movement/attacks
         if (obj.shape === 'box') scene.propObstacles.push(new Phaser.Geom.Rectangle(obj.x - 12, obj.y - 12, 24, 24));
@@ -513,15 +522,21 @@ function update(time, delta) {
 
         const attackRequested = this.keys.action.isDown || (isMobile && mobileActionDown);
         if (attackRequested && !player.isCharging) {
-            isKillCharging = true;
+            if (!isKillCharging) {
+                isKillCharging = true;
+                if (socketRef) socketRef.emit('kill_charging', true);
+            }
             killChargeTimer += delta;
             if (killChargeTimer >= KILL_TIME) {
                 performKill(this);
                 killChargeTimer = 0;
+                isKillCharging = false;
+                if (socketRef) socketRef.emit('kill_charging', false);
             }
         } else {
             if (isKillCharging) {
                 performKill(this); // Trigger on release
+                if (socketRef) socketRef.emit('kill_charging', false);
             }
             isKillCharging = false;
             killChargeTimer = 0;
@@ -560,6 +575,13 @@ function update(time, delta) {
     }
 
     allPlayers.forEach(p => {
+        if (p.isKillCharging && p !== player) {
+            p.killChargeTimer = (p.killChargeTimer || 0) + delta;
+            if (p.killChargeTimer > KILL_TIME) p.killChargeTimer = KILL_TIME;
+        } else if (!p.isKillCharging && p !== player) {
+            p.killChargeTimer = 0;
+        }
+
         if (p.shapeGraphic) {
             p.shapeGraphic.x = p.x;
             p.shapeGraphic.y = p.y;
@@ -580,14 +602,13 @@ function update(time, delta) {
                 p.visualGraphic.lineStyle(3, 0xff2a2a, 0.6);
                 p.visualGraphic.strokeCircle(0, 0, 26 + pulse);
 
-                if (p.isCharging) {
-                    const chargeRadius = (time % 800) / 800 * 360;
-                    p.visualGraphic.lineStyle(4, 0xff2a2a, 0.8 * (1 - (chargeRadius / 360)));
+                const currentKillTimer = p === player ? killChargeTimer : (p.killChargeTimer || 0);
+                if (currentKillTimer > 0) {
+                    const chargeRadius = (currentKillTimer / KILL_TIME) * 150;
+                    p.visualGraphic.lineStyle(2, 0xff0000, 0.8);
                     p.visualGraphic.strokeCircle(0, 0, chargeRadius);
-
-                    const chargeRadius2 = ((time + 400) % 800) / 800 * 360;
-                    p.visualGraphic.lineStyle(2, 0xff2a2a, 0.4 * (1 - (chargeRadius2 / 360)));
-                    p.visualGraphic.strokeCircle(0, 0, chargeRadius2);
+                    p.visualGraphic.fillStyle(0xff0000, 0.2);
+                    p.visualGraphic.fillCircle(0, 0, chargeRadius);
                 }
 
                 // Inner core
@@ -674,12 +695,11 @@ function renderLighting(scene) {
     // Flashlight cones and 360 fields - raycasted polygons
     activeLights.forEach(s => {
         const isHunterLight = s.role === 'hunter';
-        const radius = isHunterLight ? 360 : 550;
+        const radius = isHunterLight ? 360 : 2500; // Flashlight until blocked
         const spread = isHunterLight ? Math.PI : 0.5;
 
-        // Shroud removal is only blocked by actual walls, not props (to keep the map visible)
-        // BUT Flashlight reveal of survivors is blocked by props.
-        const points = getLightPolygon(scene, s, radius, spread, false);
+        // Survivor flashlight is blocked by props
+        const points = getLightPolygon(scene, s, radius, spread, !isHunterLight);
 
         // Soft gradient effect using overlapping polygons
         for (let i = 0; i < 5; i++) {
@@ -780,12 +800,12 @@ function renderLighting(scene) {
     // Draw visible light cones for all players so others see their flashlights
     activeLights.forEach(s => {
         const isHunterLight = s.role === 'hunter';
-        const radius = isHunterLight ? 360 : 550;
+        const radius = isHunterLight ? 360 : 2500;
         const spread = isHunterLight ? Math.PI : 0.5;
         const color = isHunterLight ? 0xff2a2a : 0xffffaa;
         const alpha = isHunterLight ? 0.1 : 0.15;
 
-        const points = getLightPolygon(scene, s, radius, spread);
+        const points = getLightPolygon(scene, s, radius, spread, !isHunterLight);
 
         // Draw the light cone on top of the map
         const lightGraphic = scene.add.graphics().setDepth(48).setAlpha(alpha);
@@ -847,7 +867,7 @@ function checkLineOfSight(x1, y1, x2, y2, blockByProps = false) {
 function checkIlluminated(target, sources, blockByProps = false) {
     for (let s of sources) {
         const isHunterLight = s.role === 'hunter';
-        const radius = isHunterLight ? 360 : 550;
+        const radius = isHunterLight ? 360 : 2500;
         const spread = isHunterLight ? Math.PI : 0.5;
 
         const dist = Phaser.Math.Distance.Between(s.x, s.y, target.x, target.y);
